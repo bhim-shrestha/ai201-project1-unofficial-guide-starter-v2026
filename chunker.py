@@ -80,24 +80,89 @@ def fallback_split(
     return chunks
 
 
+# Milestone 3 chunking constants for campus_life.
+#
+# Evidence: all 88 documents are under 550 characters (median 305), so the
+# starter's 800-char window never splits anything — it stores each whole post as
+# one chunk and bundles unrelated facts together (Kestrel Commons' lunch wait
+# time and its opening hours end up in the same chunk). But every document has
+# 2-5 paragraphs, and each paragraph is one distinct fact. So the natural unit
+# here is the paragraph, not a character count.
+TITLE_MAX_CHARS = 60     # a first paragraph this short is a heading, not content
+MIN_CHUNK_CHARS = 60     # merge a paragraph shorter than this into its neighbour
+
+
 def split_documents(documents: list[Document]) -> list[Chunk]:
     """
-    Split documents into chunks. ⚠️ REPLACE THE BODY OF THIS IN MILESTONE 3.
+    Paragraph-boundary chunking for the campus_life corpus.
 
-    Right now it just calls the fallback. That is the plain, generic behaviour
-    the brief is talking about.
+    For each document:
+      1. Split on blank lines into paragraphs.
+      2. Treat a short first paragraph (<= TITLE_MAX_CHARS) as the document's
+         title and prepend it to every chunk, so each chunk names its subject
+         and can be retrieved on its own — "Hours are 7am..." becomes
+         "Kestrel Commons\\nHours are 7am...".
+      3. Merge any paragraph shorter than MIN_CHUNK_CHARS into the chunk being
+         built, so a stray one-line aside never becomes a bare fragment.
 
-    When you write your own strategy, set `produced_by` to
-    "chunker.py::split_documents" so your README's Sample Chunks section names
-    the right function. `app.py chunks` prints that string for you.
-
-    Things worth thinking about before you write any code:
-      - Are your documents short posts or long guides?
-      - Is the useful information in one sentence, or spread over a paragraph?
-      - Would splitting on paragraph breaks keep more thoughts intact than
-        splitting on a character count?
+    Overlap is zero on purpose: paragraph boundaries already fall between
+    complete thoughts, so character overlap would only duplicate whole facts,
+    not rescue a sentence split across a cut.
     """
-    return fallback_split(documents)
+    chunks: list[Chunk] = []
+
+    for doc in documents:
+        paragraphs = [p.strip() for p in doc.text.split("\n\n") if p.strip()]
+        if not paragraphs:
+            continue
+
+        title = ""
+        body = paragraphs
+        if len(paragraphs) > 1 and len(paragraphs[0]) <= TITLE_MAX_CHARS:
+            title, body = paragraphs[0], paragraphs[1:]
+
+        prefix = f"{title}\n" if title else ""
+        index = 0
+        buffer = ""
+        for para in body:
+            buffer = f"{buffer}\n\n{para}" if buffer else para
+            # Keep filling the buffer until it clears the minimum, so short
+            # paragraphs attach to their neighbour instead of standing alone.
+            if len(buffer) < MIN_CHUNK_CHARS:
+                continue
+            chunks.append(
+                Chunk(
+                    text=f"{prefix}{buffer}",
+                    source=doc.source,
+                    index=index,
+                    produced_by="chunker.py::split_documents",
+                )
+            )
+            index += 1
+            buffer = ""
+
+        # Flush a trailing short paragraph onto the last chunk of this document
+        # rather than dropping it or emitting it as a fragment.
+        if buffer:
+            if index > 0:
+                last = chunks[-1]
+                chunks[-1] = Chunk(
+                    text=f"{last.text}\n\n{buffer}",
+                    source=last.source,
+                    index=last.index,
+                    produced_by=last.produced_by,
+                )
+            else:
+                chunks.append(
+                    Chunk(
+                        text=f"{prefix}{buffer}",
+                        source=doc.source,
+                        index=index,
+                        produced_by="chunker.py::split_documents",
+                    )
+                )
+
+    return chunks
 
 
 def describe(chunks: list[Chunk]) -> str:
