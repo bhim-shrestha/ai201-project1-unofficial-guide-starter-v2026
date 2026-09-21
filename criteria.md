@@ -22,9 +22,14 @@ pipeline earns credit; *"80% seemed reasonable"* does not.
 For at least 4 of my 5 test questions, the retrieved chunks include one that
 contains the answer.
 
-**Why this target:**
-<!-- e.g. "One of my questions is about a topic only two documents mention, so
-     I expect that one to be hard." -->
+**Why this target:** Four of my five questions ask for a fact that lives in
+exactly one document (the printing quota, Kestrel's wait times, the shuttle
+frequency, Tamsin's noise level), so retrieval only has to surface that one
+paragraph. The fifth — "which library floor has power outlets at every seat" —
+names the feature (outlets) rather than the answer (basement) and that detail
+sits in the second paragraph of its document, away from the "library hours"
+wording most likely to match the query. That is the one I expect to be able to
+miss, so I target 4 of 5 rather than 5 of 5.
 
 ---
 
@@ -32,9 +37,13 @@ contains the answer.
 
 Every answer the system produces names at least one source document.
 
-**Why this target:**
-<!-- Why all five and not four? What about your setup makes that achievable —
-     or what would have to go wrong for it not to be? -->
+**Why this target:** I set this at 5 of 5, not 4, because nothing in my pipeline
+produces an answer without a source in front of it. `build_prompt` in
+generate.py stamps every retrieved chunk with `[from <filename>]`, and the
+grounding instruction tells the model to name the file it used. A passing
+question therefore always has a filename available to cite; if even one answer
+came back without a source, that would be a prompt-adherence failure worth
+catching, not an acceptable miss.
 
 ---
 
@@ -49,49 +58,46 @@ in at least 4 of 5 tries.
      what happened into your run log. Swap them for your own if you'd rather —
      just keep five of them, or the "4 of 5" above has nothing to be 4 of. -->
 
-**Why this target:**
-<!-- What did your distances look like when you set the cutoff in Milestone 4?
-     Was there a clean gap, or did the two groups overlap? -->
+**Why this target:** When I measured distances in Milestone 4, my five in-corpus
+questions came back at 0.18-0.47 and the five OUT_OF_SCOPE questions at
+0.82-0.92 — a clean gap from 0.47 to 0.82 with nothing in between. With the
+cutoff at 0.65, all five out-of-corpus questions sit well above it, so I could
+have written 5 of 5. I keep the target at "at least 4 of 5" because the gap was
+measured on one embedding of five questions; a differently-worded out-of-corpus
+question could land nearer the boundary, and I would rather the criterion hold
+under that than only under the five I happened to try.
 
 ---
 
-## 4. Something about your chunks
+## 4. Chunks stand alone as complete thoughts
 
-<!-- YOU WRITE THIS ONE.
+For at least 4 of 5 sampled chunks, the chunk reads as one complete thought: no
+chunk is a bare heading, and no sentence is cut in half at either end.
 
-     How would you know if your chunks were the right size? Name something
-     countable or observable.
-
-     Examples of the right shape — don't copy these, they should come from
-     what you actually saw in Milestone 3:
-       - "At least 4 of 5 sampled chunks read as a complete thought, with no
-          sentence cut in half at either end."
-       - "No chunk is shorter than 200 characters, since anything below that
-          in my corpus turned out to be a heading with no content under it." -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** My chunker splits on paragraph boundaries and merges any
+paragraph under 60 characters into its neighbour, precisely so a heading line
+like "Kestrel Commons" never becomes a standalone chunk (the shortest chunk it
+produces is 85 characters). Because paragraphs in this corpus already end on
+sentence boundaries, a chunk with a sentence sliced across its edge would mean
+the split logic is broken, not merely suboptimal — so this is something I should
+hit on all five, and 4 of 5 leaves room for one judgement call on what counts as
+"complete."
 
 ---
 
-## 5. Your choice
+## 5. The named source is the correct source
 
-<!-- YOU WRITE THIS ONE TOO.
+For at least 4 of my 5 answered questions, the source the answer names is the
+document that actually contains the fact — not merely that *a* source is named.
 
-     Pick something you actually care about getting right. It could be about
-     speed, about refusals, about a particular kind of question your corpus
-     handles badly, about source attribution being correct rather than merely
-     present — anything, as long as it names a number or an observable
-     outcome. -->
-
-
-
-**Why this target:**
-
-
+**Why this target:** Criterion 2 only checks that a source is present; an answer
+could cite the wrong file and still pass it. What I actually care about is that a
+student who follows the citation lands on the right document. I target 4 of 5
+rather than 5 because several topics in this corpus are covered by near-duplicate
+pairs — every dining hall and dorm has both a main post and a "followup," and
+laundry costs appear in passing across multiple housing files — so the model can
+reasonably cite the followup or a sibling document instead of the primary source
+for one question.
 
 ---
 

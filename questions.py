@@ -22,12 +22,16 @@ names a target of "4 of 5", and four of three is not a thing.
 """
 
 QUESTIONS = [
-    # {"question": "...", "expects": "..."},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
-    {"question": "", "expects": ""},
+    # One question per corpus category (admin, dining, transit, study, housing).
+    # Q4 is phrased indirectly on purpose — it names the feature (outlets), not
+    # the answer (basement), and the answer lives in the second paragraph of its
+    # document. It is the one most likely to miss, which is why criterion 1
+    # targets "4 of 5" rather than "5 of 5".
+    {"question": "How much printing quota does each student get per semester?", "expects": "$30"},
+    {"question": "What are the lunch wait times at Kestrel Commons?", "expects": "20 to 25 minutes"},
+    {"question": "How often does the campus shuttle run on weekdays?", "expects": "20 minutes"},
+    {"question": "Which library floor has power outlets at every seat?", "expects": "basement"},
+    {"question": "How quiet is Tamsin Court?", "expects": "concrete floors"},
 ]
 
 # Questions from a different world entirely. Your gate should refuse all five.
